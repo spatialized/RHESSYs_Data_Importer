@@ -11,10 +11,6 @@ public static class TextFileInput
     /// <param name="dataFile">Data file.</param>
     public static void ReadData(string folderAggregate, string folderCubes)
     {
-        //TESTING
-        bool debug = true;
-
-        // DAL
         RHESSYsDAL dal = new RHESSYsDAL();
 
         try
@@ -195,6 +191,66 @@ public static class TextFileInput
             }
 
             dal.AddDataPoint(data); 
+        }
+    }
+
+    /// <summary>
+    /// Initializes cube data arrays from data file.
+    /// </summary>
+    /// <param name="dataFile">Data file.</param>
+    public static void ReadDates(string folderAggregate)
+    {
+        RHESSYsDAL dal = new RHESSYsDAL();
+
+        try
+        {
+            foreach (string file in Directory.EnumerateFiles(folderAggregate))
+            {
+                string fileName = Path.GetFileNameWithoutExtension(file);
+                Console.WriteLine("Importing dates from file: " + fileName);
+
+                if (fileName.Contains("hist"))      // Take first file
+                {
+                    List<string> lines = ReadFromFile(file);
+                    Console.WriteLine("Read " + lines.Count + " lines from file " + fileName);
+
+                    int count = 0;
+                    foreach (string line in lines)
+                    {
+                        if (count > 0)
+                            AddDate(line);
+
+                        if(count % 10000 == 0)
+                            Console.WriteLine("Added " + count + " dates from file " + fileName);
+
+                        count++;
+                    }
+                }
+            }
+
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Exception: " + e.Message);
+        }
+        finally
+        {
+            Console.WriteLine("Finished...");
+        }
+
+        void AddDate(string line)
+        {
+            string[] str = line.Split(' ');
+
+            Date date = new Date();
+
+            //date.id; Primary key --> add in SQL Server
+            date.year = int.Parse(str[18]);
+            date.month = int.Parse(str[19]);
+            date.day = int.Parse(str[20]);
+            date.date = new DateTime(date.year, date.month, date.day);
+
+            dal.AddDate(date);
         }
     }
 

@@ -24,5 +24,20 @@ namespace RHESSYs_Data_Importer.DAL
                     return false;
             }
         }
+
+        /// <summary>
+        /// Add data point to FutureMountain dates table
+        /// </summary>
+        public bool AddDate(Date date)
+        {
+            using (var db = new DatesDbContext())
+            {
+                db.Dates.Add(date);
+                if (db.SaveChanges() > 0)
+                    return true;
+                else
+                    return false;
+            }
+        }
     }
 }
