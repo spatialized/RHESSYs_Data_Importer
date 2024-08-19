@@ -1,6 +1,7 @@
-﻿// Program to import RHESSYs data into MSSQL database
+﻿// Program to import RHESSYs data into MSSQL or MySQL database
+// Note: Change USE_MYSQL compilation symbol to switch between MySQL and MSSQL
 
-bool importDates = false;
+bool importDates = true;
 bool importData = true;
 
 // Data Folders
@@ -11,6 +12,9 @@ Console.WriteLine("-- RHESSYS Data Importer v1.0 --");
 Console.WriteLine("-- by David Gordon --");
 Console.WriteLine("");
 Console.WriteLine("Running...");
+
+// -- TO DO: Check that Dates table exists
+//           Check that CubeData table exists
 
 if(importDates)
     TextFileInput.ReadDates(folderAggregate);

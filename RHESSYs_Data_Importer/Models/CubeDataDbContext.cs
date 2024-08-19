@@ -27,8 +27,14 @@ namespace RHESSYs_Data_Importer.Models
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
+#if USE_MYSQL
+            string connectionString = System.Configuration.ConfigurationManager
+                .ConnectionStrings["CubeDataContextVultr"].ConnectionString;
+            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
+#else
             string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["CubeDataContext"].ConnectionString;
             optionsBuilder.UseSqlServer(connectionString);
+#endif
         }
 
         public DbSet<CubeDataPoint> CubeData { get; set; }
