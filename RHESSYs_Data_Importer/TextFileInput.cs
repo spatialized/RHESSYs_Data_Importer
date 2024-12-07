@@ -2,6 +2,9 @@
 using System.IO;
 using RHESSYs_Data_Importer.Models;
 using RHESSYs_Data_Importer.DAL;
+using System.Diagnostics;
+using System.Resources;
+using Newtonsoft.Json;
 
 public static class TextFileInput
 {
@@ -194,6 +197,41 @@ public static class TextFileInput
         }
     }
 
+    public static void ReadWaterData(string folderWater)
+    {
+        // List<WaterDataYear> waterData;          // List of formatted water data by warming idx.
+        RHESSYsDAL dal = new RHESSYsDAL();
+
+        try
+        {
+            //TextAsset patchExtTextAsset = (TextAsset)Resources.Load("WaterData/WaterData");
+            string text = ReadFile(folderWater + "/" + "WaterData.json");
+            List<WaterDataYear> waterData = JsonConvert.DeserializeObject<List<WaterDataYear>>(text);
+            foreach (WaterDataYear year in waterData)
+            {
+                foreach (WaterDataMonth month in year.GetMonths())
+                {
+                    foreach (WaterDataFrame frame in month.GetFrames())
+                    {
+                        try
+                        {
+                            frame.index++;
+                            dal.AddWaterDataFrame(frame);
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("ReadWaterData()... ERROR... ex: "+ex.Message);
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            //Debug.Log("InitializeData()... waterData ERROR: " + e.Message);
+        }
+    }
+
     /// <summary>
     /// Initializes cube data arrays from data file.
     /// </summary>
@@ -284,5 +322,37 @@ public static class TextFileInput
 
         sr.Close();        // Close file
         return lines;
+    }
+
+    /// <summary>
+    /// Text asset to list.
+    /// </summary>
+    /// <returns>The asset to list.</returns>
+    /// <param name="ta">Ta.</param>
+    private static string ReadFile(string filePath)
+    {
+        //List<string> lines = new List<string>();
+        string text;
+
+        Console.WriteLine("ReadFromFile()... filePath: " + filePath);
+
+        // Pass the file path and file name to the StreamReader constructor
+        StreamReader sr = new StreamReader(filePath);
+        // Read the first line of text
+
+        int ct = 0;
+        text = sr.ReadToEnd();
+        // Continue to read until you reach end of file
+        //while (text != null)
+        //{
+        //    //Console.WriteLine(line);
+        //    lines.Add(text);
+
+        //    //Read the next line
+        //    text = sr.ReadLine();
+        //}
+
+        sr.Close();        // Close file
+        return text;
     }
 }

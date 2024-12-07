@@ -1,25 +1,28 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols;
+using RHESSYs_Data_Importer.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RHESSYs_Data_Importer.Models
+namespace RHESSYs_Data_Importer.DAL
 
 {
 
     /// <summary>
     /// The cube data database context.
     /// </summary>
-    public class DatesDbContext : DbContext
+    public class CubeDataDbContext : DbContext
     {
-        public DatesDbContext()
+        //private const string connectionString = "Server=localhost\\SQLEXPRESS;Database=EFCore;Trusted_Connection=True;";
+
+        public CubeDataDbContext()
         {
         }
 
-        public DatesDbContext(DbContextOptions<CubeDataDbContext> options) : base(options)
+        public CubeDataDbContext(DbContextOptions<CubeDataDbContext> options) : base(options)
         {
         }
 
@@ -27,7 +30,7 @@ namespace RHESSYs_Data_Importer.Models
         {
 #if USE_MYSQL
             string connectionString = System.Configuration.ConfigurationManager
-                .ConnectionStrings["CubeDataContextVultr"].ConnectionString;
+                .ConnectionStrings["CubeDataContextGrit"].ConnectionString;
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 #else
             string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["CubeDataContext"].ConnectionString;
@@ -35,7 +38,7 @@ namespace RHESSYs_Data_Importer.Models
 #endif
         }
 
-        public DbSet<Date> Dates { get; set; }
+        public DbSet<CubeDataPoint> CubeData { get; set; }
     }
 
 }
