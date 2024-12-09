@@ -8,11 +8,9 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace RHESSYs_Data_Importer.DAL
-
 {
-
     /// <summary>
-    /// The cube data database context.
+    /// The water data database context.
     /// </summary>
     public class WaterDataDbContext : DbContext
     {

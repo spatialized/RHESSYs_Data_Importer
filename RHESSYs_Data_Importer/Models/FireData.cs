@@ -95,10 +95,12 @@ namespace RHESSYs_Data_Importer.Models
     [Serializable]
     public class FireDataPoint : IComparable<FireDataPoint>
     {
-        public Vector2 gridLocation;
-        public int patchId;
-        public float spread;
-        public int iter;
+        //[Key] 
+        //private int id;
+        public Vector2 gridLocation { get; set; }
+        public int patchId { get; set; }
+        public float spread { get; set; }
+        public int iter { get; set; }
 
         /// <summary>
         /// Constructor 
@@ -223,7 +225,7 @@ namespace RHESSYs_Data_Importer.Models
             }
             catch (Exception ex)
             {
-                Console.WriteLine("SetDataList()... ERROR... ex:"+ex.Message);
+                Console.WriteLine("SetData()... ERROR... ex:"+ex.Message);
             }
         }
     }

@@ -248,7 +248,7 @@ public static class TextFileInput
                 int warmingDegrees = int.Parse(warmingStr);
                 warmingIdx = WarmingDegreesToIndex(warmingDegrees);
 
-                //string text = ReadFile(folderFire + "/" + "fireDataList_0.json");
+                //string text = ReadFile(folderPath + "/" + "fireDataList_0.json");
                 string text = ReadFile(file);
 
                 List<FireDataFrameRecord> fireData = JsonConvert.DeserializeObject<List<FireDataFrameRecord>>(text);
@@ -286,6 +286,50 @@ public static class TextFileInput
         }
 
         return results;
+    }
+    //private string ExportPatchExtents(Dictionary<int, PatchPointCollection> extents, string fileName, string path)
+    //{
+    //    if (path.Equals(""))
+    //        path = EditorUtility.SaveFolderPanel("Choose a directory to save the landscape data files:", "", "");
+
+    //    string json = JsonConvert.SerializeObject(extents, Formatting.None,
+    //        new JsonSerializerSettings()
+    //        {
+    //            ReferenceLoopHandling = ReferenceLoopHandling.Ignore
+    //        });
+
+    //    File.WriteAllText(path + "/" + fileName + ".json", json);
+    //    return path;
+    //}
+
+    public static void ReadPatchData(string folderPath)
+    {
+        // List<WaterDataYear> waterData;          // List of formatted water data by warming idx.
+        RHESSYsDAL dal = new RHESSYsDAL();
+
+        try
+        {
+            //TextAsset patchExtTextAsset = (TextAsset)Resources.Load("WaterData/WaterData");
+            string text = ReadFile(folderPath + "/" + "PatchData.json");
+            Dictionary<int, PatchPointCollection> patchData = JsonConvert.DeserializeObject<Dictionary<int, PatchPointCollection>>(text);
+            foreach (int i in patchData.Keys)
+            {
+                try
+                {
+                    PatchPointCollection coll = patchData[i];
+                    coll.id++;
+                    dal.AddPatchData(i, coll);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("ReadWaterData()... ERROR... ex: " + ex.Message);
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            //Debug.Log("InitializeData()... waterData ERROR: " + e.Message);
+        }
     }
 
 
