@@ -5,6 +5,9 @@ using RHESSYs_Data_Importer.DAL;
 using System.Diagnostics;
 using System.Resources;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
 public static class TextFileInput
 {
@@ -12,7 +15,7 @@ public static class TextFileInput
     /// Initializes cube data arrays from data file.
     /// </summary>
     /// <param name="dataFile">Data file.</param>
-    public static void ReadData(string folderAggregate, string folderCubes)
+    public static void ReadCubeData(string folderAggregate, string folderCubes)
     {
         RHESSYsDAL dal = new RHESSYsDAL();
 
@@ -37,29 +40,12 @@ public static class TextFileInput
                     string[] parts = file.Split('.')[0].Split("_fire");
                     string warmingStr = parts[0].Substring(parts[0].Length-1);
                     int warmingDegrees = int.Parse(warmingStr);
-                    switch (warmingDegrees)
-                    {
-                        case 1:
-                            warmingIdx = 1;
-                            break;
-                        case 2:
-                            warmingIdx = 2;
-                            break;
-                        case 4:
-                            warmingIdx = 3;
-                            break;
-                        case 6:
-                            warmingIdx = 4;
-                            break;
-                        default:
-                            warmingIdx = -1;
-                            break;
-                    }
+                    warmingIdx = WarmingDegreesToIndex(warmingDegrees);
                 }
 
                 //Console.WriteLine("Set warmingIdx: " + warmingIdx);
 
-                List<string> lines = ReadFromFile(file);
+                List<string> lines = ReadLinesFromFile(file);
                 //Console.WriteLine("Read " + lines.Count +" lines from file "+fileName);
 
                 int count = 0;
@@ -95,28 +81,10 @@ public static class TextFileInput
                     int warmingDegrees = int.Parse(warmingStr);
 
                     Console.WriteLine("Set patchIdx: " + patchIdx);
-
-                    switch (warmingDegrees)
-                    {
-                        case 1:
-                            warmingIdx = 1;
-                            break;
-                        case 2:
-                            warmingIdx = 2;
-                            break;
-                        case 4:
-                            warmingIdx = 3;
-                            break;
-                        case 6:
-                            warmingIdx = 4;
-                            break;
-                        default:
-                            warmingIdx = -1;
-                            break;
-                    }
+                    warmingIdx = WarmingDegreesToIndex(warmingDegrees);
                 }
 
-                List<string> lines = ReadFromFile(file);
+                List<string> lines = ReadLinesFromFile(file);
                 int count = 0;
                 foreach (string line in lines)
                 {
@@ -197,6 +165,35 @@ public static class TextFileInput
         }
     }
 
+    private static int WarmingDegreesToIndex(int warmingDegrees)
+    {
+        int warmingIdx;
+
+        switch (warmingDegrees)
+        {
+            case 0:
+                warmingIdx = 0;
+                break;
+            case 1:
+                warmingIdx = 1;
+                break;
+            case 2:
+                warmingIdx = 2;
+                break;
+            case 4:
+                warmingIdx = 3;
+                break;
+            case 6:
+                warmingIdx = 4;
+                break;
+            default:
+                warmingIdx = -1;
+                break;
+        }
+
+        return warmingIdx;
+    }
+
     public static void ReadWaterData(string folderWater)
     {
         // List<WaterDataYear> waterData;          // List of formatted water data by warming idx.
@@ -226,11 +223,71 @@ public static class TextFileInput
                 }
             }
         }
+        catch (Exception ex)
+        {
+            //Debug.Log("InitializeData()... waterData ERROR: " + e.Message);
+        }
+    }
+
+    public static void ReadFireData(string folderFire)
+    {
+        RHESSYsDAL dal = new RHESSYsDAL();
+
+        try
+        {
+            // fireDataList_0.json
+            foreach (string file in Directory.EnumerateFiles(folderFire))
+            {
+                int warmingIdx = -1;
+                
+                string fileName = Path.GetFileNameWithoutExtension(file);
+                Console.WriteLine("ReadFireData()... fileName: " + fileName);
+
+                string[] parts = file.Split('.')[0].Split("_fire");
+                string warmingStr = parts[0].Substring(parts[0].Length - 1);
+                int warmingDegrees = int.Parse(warmingStr);
+                warmingIdx = WarmingDegreesToIndex(warmingDegrees);
+
+                //string text = ReadFile(folderFire + "/" + "fireDataList_0.json");
+                string text = ReadFile(file);
+
+                List<FireDataFrameRecord> fireData = JsonConvert.DeserializeObject<List<FireDataFrameRecord>>(text);
+                List<FireDataFrameJSONRecord> jsonRecords = ConvertFireDataFrameRecordsToJSONRecords(fireData, warmingIdx);
+
+                foreach (FireDataFrameJSONRecord record in jsonRecords)
+                {
+                    try
+                    {
+                        dal.AddFireDataFrame(record);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("ReadFireData()... ERROR... ex: " + ex.Message);
+                    }
+                }
+            }
+        }
         catch (Exception e)
         {
             //Debug.Log("InitializeData()... waterData ERROR: " + e.Message);
         }
     }
+
+
+    private static List<FireDataFrameJSONRecord> ConvertFireDataFrameRecordsToJSONRecords(List<FireDataFrameRecord> frames, int warmingIdx)
+    {
+        List<FireDataFrameJSONRecord> results = new List<FireDataFrameJSONRecord>();
+
+        foreach (FireDataFrameRecord record in frames)
+        {
+            FireDataFrameJSONRecord jsonRecord = record.GetJsonRecord();
+            jsonRecord.warmingIdx = warmingIdx;
+            results.Add(jsonRecord);
+        }
+
+        return results;
+    }
+
 
     /// <summary>
     /// Initializes cube data arrays from data file.
@@ -249,7 +306,7 @@ public static class TextFileInput
 
                 if (fileName.Contains("hist"))      // Take first file
                 {
-                    List<string> lines = ReadFromFile(file);
+                    List<string> lines = ReadLinesFromFile(file);
                     Console.WriteLine("Read " + lines.Count + " lines from file " + fileName);
 
                     int count = 0;
@@ -297,12 +354,12 @@ public static class TextFileInput
     /// </summary>
     /// <returns>The asset to list.</returns>
     /// <param name="ta">Ta.</param>
-    private static List<string> ReadFromFile(string filePath)
+    private static List<string> ReadLinesFromFile(string filePath)
     {
         List<string> lines = new List<string>();
         string line;
 
-        Console.WriteLine("ReadFromFile()... filePath: " + filePath);
+        Console.WriteLine("ReadLinesFromFile()... filePath: " + filePath);
 
         // Pass the file path and file name to the StreamReader constructor
         StreamReader sr = new StreamReader(filePath);
@@ -334,7 +391,7 @@ public static class TextFileInput
         //List<string> lines = new List<string>();
         string text;
 
-        Console.WriteLine("ReadFromFile()... filePath: " + filePath);
+        Console.WriteLine("ReadLinesFromFile()... filePath: " + filePath);
 
         // Pass the file path and file name to the StreamReader constructor
         StreamReader sr = new StreamReader(filePath);

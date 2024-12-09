@@ -3,14 +3,16 @@
 
 bool importDates = false;
 bool importCubeData = false;
-bool importWaterData = true;
+bool importWaterData = false;
+bool importFireData = false;
 //bool importFireData = true;
 //bool importPatchData = true;
 
 // Data Folders
 string folderAggregate = "C:\\Users\\Redux\\Documents\\FutureMountain\\aggregate";      
-string folderCubes = "C:\\Users\\Redux\\Documents\\FutureMountain\\fire_cubes";         
-string folderWater = "C:\\Users\\Redux\\Documents\\FutureMountain\\water";              
+string folderCubes = "C:\\Users\\Redux\\Documents\\FutureMountain\\fire_cubes";
+string folderWater = "C:\\Users\\Redux\\Documents\\FutureMountain\\water";
+string folderFire = "C:\\Users\\Redux\\Documents\\FutureMountain\\fire"; 
 
 Console.WriteLine("-- RHESSYS Data Importer v1.1 --");
 Console.WriteLine("-- by David Gordon --");
@@ -23,9 +25,11 @@ Console.WriteLine("Running...");
 if(importDates)
     TextFileInput.ReadDates(folderAggregate);
 if(importCubeData)
-    TextFileInput.ReadData(folderAggregate, folderCubes);
+    TextFileInput.ReadCubeData(folderAggregate, folderCubes);
 if (importWaterData)
     TextFileInput.ReadWaterData(folderWater);
+if (importFireData)
+    TextFileInput.ReadFireData(folderFire);
 
 Console.WriteLine("Finished importing data successfully...");
 
