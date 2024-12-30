@@ -10,17 +10,17 @@ using System.Threading.Tasks;
 namespace RHESSYs_Data_Importer.DAL
 {
     /// <summary>
-    /// The water data database context.
+    /// The fire data database context.
     /// </summary>
-    public class WaterDataDbContext : DbContext
+    public class FireDataDbContext : DbContext
     {
         //private const string connectionString = "Server=localhost\\SQLEXPRESS;Database=EFCore;Trusted_Connection=True;";
 
-        public WaterDataDbContext()
+        public FireDataDbContext()
         {
         }
 
-        public WaterDataDbContext(DbContextOptions<WaterDataDbContext> options) : base(options)
+        public FireDataDbContext(DbContextOptions<FireDataDbContext> options) : base(options)
         {
         }
 
@@ -28,7 +28,7 @@ namespace RHESSYs_Data_Importer.DAL
         {
 #if USE_MYSQL
             string connectionString = System.Configuration.ConfigurationManager
-                .ConnectionStrings["WaterDataContext"].ConnectionString;
+                .ConnectionStrings["FireDataContext"].ConnectionString;
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 #else
             string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["CubeDataContext"].ConnectionString;
@@ -36,7 +36,7 @@ namespace RHESSYs_Data_Importer.DAL
 #endif
         }
 
-        public DbSet<WaterDataFrame> WaterData { get; set; }
+        public DbSet<FireDataFrameJSONRecord> FireData { get; set; }
     }
 
 }

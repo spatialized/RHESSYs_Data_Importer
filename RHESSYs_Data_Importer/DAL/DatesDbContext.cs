@@ -28,7 +28,7 @@ namespace RHESSYs_Data_Importer.DAL
         {
 #if USE_MYSQL
             string connectionString = System.Configuration.ConfigurationManager
-                .ConnectionStrings["CubeDataContextGrit"].ConnectionString;
+                .ConnectionStrings["CubeDataContext"].ConnectionString;
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 #else
             string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["CubeDataContext"].ConnectionString;

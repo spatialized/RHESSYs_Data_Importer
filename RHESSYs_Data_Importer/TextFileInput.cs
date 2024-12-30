@@ -8,6 +8,7 @@ using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
+using RHESSYs_Data_Importer.Models.RHESSYs_Data_Importer.Models;
 
 public static class TextFileInput
 {
@@ -239,14 +240,15 @@ public static class TextFileInput
             foreach (string file in Directory.EnumerateFiles(folderFire))
             {
                 int warmingIdx = -1;
-                
+
                 string fileName = Path.GetFileNameWithoutExtension(file);
                 Console.WriteLine("ReadFireData()... fileName: " + fileName);
 
                 string[] parts = file.Split('.')[0].Split("_fire");
                 string warmingStr = parts[0].Substring(parts[0].Length - 1);
-                int warmingDegrees = int.Parse(warmingStr);
-                warmingIdx = WarmingDegreesToIndex(warmingDegrees);
+                warmingIdx = int.Parse(warmingStr);
+                //int warmingDegrees = int.Parse(warmingStr);
+                //warmingIdx = WarmingDegreesToIndex(warmingDegrees);
 
                 //string text = ReadFile(folderPath + "/" + "fireDataList_0.json");
                 string text = ReadFile(file);
@@ -273,6 +275,98 @@ public static class TextFileInput
         }
     }
 
+    public static void ReadTerrainData(string folderTerrain)
+    {
+        RHESSYsDAL dal = new RHESSYsDAL();
+
+        try
+        {
+            // fireDataList_0.json  terrain_warm1_1942_10_4_4.json
+            foreach (string file in Directory.EnumerateFiles(folderTerrain))
+            {
+                int warmingIdx = -1;
+
+                string fileName = Path.GetFileNameWithoutExtension(file);
+                Console.WriteLine("ReadTerrainData()... fileName: " + fileName);
+
+                string[] parts = fileName.Split('.')[0].Split("_");
+                string warmingStr = parts[1].Substring(parts[1].Length - 1);
+                warmingIdx = int.Parse(warmingStr);
+
+                string yearStr = parts[2];
+                int year = int.Parse(yearStr);
+
+                string monthStr = parts[3];
+                int month = int.Parse(monthStr);
+
+                string grainSizeStr = parts[4];
+                int grainSize = int.Parse(grainSizeStr);
+
+                string decPrecStr = parts[5];
+                int decPrec = int.Parse(decPrecStr);
+
+                string text = ReadFile(file);
+
+                int[] flatArray = JsonConvert.DeserializeObject<int[]>(text);
+                //int[,,] unflattened = Unflatten1DIntArrayTo3D(flatArray, inputWidth, 4);
+
+                int gridHeight = 512 / grainSize;
+                int gridWidth = 512 / grainSize;
+
+                TerrainData terrainData = new TerrainData(month, year, gridHeight, gridWidth,
+                    grainSize, decPrec, flatArray);
+
+                TerrainDataFrameJSONRecord jsonRecord = ConvertTerrainDataFrameRecordToJSONRecord(terrainData, 
+                    warmingIdx, year, month, grainSize, decPrec);
+
+                try
+                {
+                    dal.AddTerrainDataFrame(jsonRecord);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("ReadTerrainData()... ERROR... ex: " + ex.Message);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            //Debug.Log("InitializeData()... Terrain Data ERROR: " + e.Message);
+        }
+    }
+
+    //private static int[,,] Unflatten1DIntArrayTo3D(int[] array, int terrainWidth, int zCount)
+    //{
+    //    int xCount = terrainWidth;
+    //    int yCount = terrainWidth;
+    //    //int zCount = 4;
+
+    //    var output = new int[xCount, yCount, zCount];
+    //    var index = 0;
+    //    for (var x = 0; x < xCount; x++)
+    //    for (var y = 0; y < yCount; y++)
+    //    for (var z = 0; z < zCount; z++)
+    //        output[x, y, z] = array[index++];
+
+    //    return output;
+    //}
+
+    private static TerrainDataFrameJSONRecord ConvertTerrainDataFrameRecordToJSONRecord(TerrainData frame, int warmingIdx, int year, int month,
+        int grainSize, int decimalPrecision)
+    {
+        TerrainDataFrameJSONRecord result = new TerrainDataFrameJSONRecord();
+
+        TerrainDataFrameJSONRecord jsonRecord = frame.GetJsonRecord();
+        jsonRecord.warmingIdx = warmingIdx;
+        jsonRecord.year = year;
+        jsonRecord.month = month;
+        jsonRecord.gridHeight = frame.gridHeight;
+        jsonRecord.gridWidth = frame.gridWidth;
+        jsonRecord.pixelGrainSize = grainSize;
+        jsonRecord.decimalPrecision = decimalPrecision;
+
+        return jsonRecord;
+    }
 
     private static List<FireDataFrameJSONRecord> ConvertFireDataFrameRecordsToJSONRecords(List<FireDataFrameRecord> frames, int warmingIdx)
     {
@@ -359,7 +453,7 @@ public static class TextFileInput
                         if (count > 0)
                             AddDate(line);
 
-                        if(count % 10000 == 0)
+                        if(count % 10000 == 0 && count > 0)
                             Console.WriteLine("Added " + count + " dates from file " + fileName);
 
                         count++;
@@ -403,7 +497,7 @@ public static class TextFileInput
         List<string> lines = new List<string>();
         string line;
 
-        Console.WriteLine("ReadLinesFromFile()... filePath: " + filePath);
+        //Console.WriteLine("ReadLinesFromFile()... filePath: " + filePath);
 
         // Pass the file path and file name to the StreamReader constructor
         StreamReader sr = new StreamReader(filePath);
@@ -435,7 +529,7 @@ public static class TextFileInput
         //List<string> lines = new List<string>();
         string text;
 
-        Console.WriteLine("ReadLinesFromFile()... filePath: " + filePath);
+        //Console.WriteLine("ReadFile()... filePath: " + filePath);
 
         // Pass the file path and file name to the StreamReader constructor
         StreamReader sr = new StreamReader(filePath);

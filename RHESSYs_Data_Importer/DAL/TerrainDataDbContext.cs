@@ -6,21 +6,22 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using RHESSYs_Data_Importer.Models.RHESSYs_Data_Importer.Models;
 
 namespace RHESSYs_Data_Importer.DAL
 {
     /// <summary>
-    /// The water data database context.
+    /// The terrain data database context.
     /// </summary>
-    public class WaterDataDbContext : DbContext
+    public class TerrainDataDbContext : DbContext
     {
         //private const string connectionString = "Server=localhost\\SQLEXPRESS;Database=EFCore;Trusted_Connection=True;";
 
-        public WaterDataDbContext()
+        public TerrainDataDbContext()
         {
         }
 
-        public WaterDataDbContext(DbContextOptions<WaterDataDbContext> options) : base(options)
+        public TerrainDataDbContext(DbContextOptions<TerrainDataDbContext> options) : base(options)
         {
         }
 
@@ -28,7 +29,7 @@ namespace RHESSYs_Data_Importer.DAL
         {
 #if USE_MYSQL
             string connectionString = System.Configuration.ConfigurationManager
-                .ConnectionStrings["WaterDataContext"].ConnectionString;
+                .ConnectionStrings["TerrainDataContext"].ConnectionString;
             optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
 #else
             string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["CubeDataContext"].ConnectionString;
@@ -36,7 +37,7 @@ namespace RHESSYs_Data_Importer.DAL
 #endif
         }
 
-        public DbSet<WaterDataFrame> WaterData { get; set; }
+        public DbSet<TerrainDataFrameJSONRecord> TerrainData { get; set; }
     }
 
 }

@@ -12,15 +12,15 @@ namespace RHESSYs_Data_Importer.DAL
     /// <summary>
     /// The water data database context.
     /// </summary>
-    public class WaterDataDbContext : DbContext
+    public class PatchDataDbContext : DbContext
     {
         //private const string connectionString = "Server=localhost\\SQLEXPRESS;Database=EFCore;Trusted_Connection=True;";
 
-        public WaterDataDbContext()
+        public PatchDataDbContext()
         {
         }
 
-        public WaterDataDbContext(DbContextOptions<WaterDataDbContext> options) : base(options)
+        public PatchDataDbContext(DbContextOptions<PatchDataDbContext> options) : base(options)
         {
         }
 
@@ -36,7 +36,7 @@ namespace RHESSYs_Data_Importer.DAL
 #endif
         }
 
-        public DbSet<WaterDataFrame> WaterData { get; set; }
+        public DbSet<PatchDataRecord> PatchData { get; set; }
     }
 
 }
