@@ -28,6 +28,9 @@ namespace RHESSYs_Data_Importer.Configuration
 
         public string GetConnectionString() =>
             $"server={Host};port={Port};database={Name};user={User};password={Password};charset={Charset};";
+
+        public string GetAdminConnectionString() =>
+            $"server={Host};port={Port};user={User};password={Password};charset={Charset};";
     }
 
     public class ScenarioFlags
