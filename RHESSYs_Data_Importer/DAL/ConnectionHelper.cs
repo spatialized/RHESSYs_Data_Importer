@@ -6,8 +6,13 @@ namespace RHESSYs_Data_Importer.DAL
 {
     public static class ConnectionHelper
     {
+        private static string? _overrideConnectionString;
         public static string GetConnectionString()
         {
+            if (!string.IsNullOrEmpty(_overrideConnectionString))
+            {
+                return _overrideConnectionString;
+            }
             const string configPath = "appsettings.Development.json";
             if (File.Exists(configPath))
             {
@@ -28,6 +33,10 @@ namespace RHESSYs_Data_Importer.DAL
 
             // Fallback (safe placeholder, not real credentials)
             return "server=localhost;port=3306;database=bigcreek_rhessys;user=root;password=;charset=utf8mb4;";
+        }
+        public static void SetOverride(string connectionString)
+        {
+            _overrideConnectionString = connectionString;
         }
     }
 }

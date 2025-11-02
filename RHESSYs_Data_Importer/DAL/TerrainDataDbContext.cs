@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols;
 using RHESSYs_Data_Importer.Models;
 using System;
@@ -16,9 +16,15 @@ namespace RHESSYs_Data_Importer.DAL
     public class TerrainDataDbContext : DbContext
     {
         //private const string connectionString = "Server=localhost\\SQLEXPRESS;Database=EFCore;Trusted_Connection=True;";
+        private readonly string _connectionString;
 
-        public TerrainDataDbContext()
+        public TerrainDataDbContext() : this(ConnectionHelper.GetConnectionString())
         {
+        }
+
+        public TerrainDataDbContext(string connectionString)
+        {
+            _connectionString = connectionString;
         }
 
         public TerrainDataDbContext(DbContextOptions<TerrainDataDbContext> options) : base(options)
@@ -27,14 +33,11 @@ namespace RHESSYs_Data_Importer.DAL
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-#if USE_MYSQL
-            string connectionString = System.Configuration.ConfigurationManager
-                .ConnectionStrings["TerrainDataContext"].ConnectionString;
-            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-#else
-            string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["CubeDataContext"].ConnectionString;
-            optionsBuilder.UseSqlServer(connectionString);
-#endif
+            if (!optionsBuilder.IsConfigured)
+            {
+                var cs = _connectionString ?? ConnectionHelper.GetConnectionString();
+                optionsBuilder.UseMySql(cs, ServerVersion.AutoDetect(cs));
+            }
         }
 
         public DbSet<TerrainDataFrameJSONRecord> TerrainData { get; set; }

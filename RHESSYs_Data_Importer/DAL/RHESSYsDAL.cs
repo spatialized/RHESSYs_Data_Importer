@@ -15,13 +15,14 @@ namespace RHESSYs_Data_Importer.DAL
         private bool useMySQL = true;
 
         private static readonly string mySqlConnectionString = ConnectionHelper.GetConnectionString();
+        private readonly string _connectionString = ConnectionHelper.GetConnectionString();
 
         /// <summary>
         /// Add data point to FutureMountain cubedata table
         /// </summary>
         public bool AddDataPoint(CubeDataPoint data)
         {
-            using (var db = new CubeDataDbContext())
+            using (var db = new CubeDataDbContext(_connectionString))
             {
                 db.CubeData.Add(data);
                 if (db.SaveChanges() > 0)
@@ -36,7 +37,7 @@ namespace RHESSYs_Data_Importer.DAL
         /// </summary>
         public bool AddDate(Date date)
         {
-            using (var db = new DatesDbContext())
+            using (var db = new DatesDbContext(_connectionString))
             {
                 db.Dates.Add(date);
                 if (db.SaveChanges() > 0)
@@ -52,7 +53,7 @@ namespace RHESSYs_Data_Importer.DAL
         /// </summary>
         public bool AddWaterDataFrame(WaterDataFrame frame)
         {
-            using (var db = new WaterDataDbContext())
+            using (var db = new WaterDataDbContext(_connectionString))
             {
                 db.WaterData.Add(frame);
                 if (db.SaveChanges() > 0)
@@ -68,7 +69,7 @@ namespace RHESSYs_Data_Importer.DAL
         /// </summary>
         public bool AddPatchData(int patchId, PatchPointCollection frame)
         {
-            using (var db = new PatchDataDbContext())
+            using (var db = new PatchDataDbContext(_connectionString))
             {
                 PatchDataRecord record = ConvertPatchPointCollectionToRecord(frame, patchId);
                 db.PatchData.Add(record);
@@ -94,7 +95,7 @@ namespace RHESSYs_Data_Importer.DAL
         {
             try
             {
-                using (var db = new TerrainDataDbContext())
+                using (var db = new TerrainDataDbContext(_connectionString))
                 {
                     db.TerrainData.Add(frame);
                     if (db.SaveChanges() > 0)
@@ -117,7 +118,7 @@ namespace RHESSYs_Data_Importer.DAL
         {
             try
             {
-                using (var db = new FireDataDbContext())
+                using (var db = new FireDataDbContext(_connectionString))
                 {
                     db.FireData.Add(frame);
                     if (db.SaveChanges() > 0)

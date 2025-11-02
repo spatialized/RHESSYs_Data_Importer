@@ -1,5 +1,8 @@
-﻿// Program to import RHESSYs data into MSSQL or MySQL database
+// Program to import RHESSYs data into MSSQL or MySQL database
 // Note: Change USE_MYSQL compilation symbol to switch between MySQL and MSSQL
+
+using RHESSYs_Data_Importer.Configuration;
+using RHESSYs_Data_Importer.DAL;
 
 bool importAll = false;
 bool importDates = importAll;
@@ -21,6 +24,23 @@ Console.WriteLine("-- RHESSYS Data Importer v1.1 --");
 Console.WriteLine("-- by David Gordon --");
 Console.WriteLine("");
 Console.WriteLine("Running...");
+{
+    ScenarioConfig config;
+    const string defaultConfigPath = "ScenarioConfig_BigCreek.json";
+
+    if (File.Exists(defaultConfigPath))
+    {
+        config = ScenarioConfigLoader.Load(defaultConfigPath);
+        Console.WriteLine($"Loaded scenario: {config.ScenarioName}");
+        Console.WriteLine($"Database: {config.Database.Name} @ {config.Database.Host}:{config.Database.Port}");
+        // Make connection string available to all DbContexts
+        ConnectionHelper.SetOverride(config.Database.GetConnectionString());
+    }
+    else
+    {
+        Console.WriteLine("No ScenarioConfig.json found. Running legacy Big Creek importer...");
+    }
+}
 
 // -- TO DO: Check that Dates table exists
 //           Check that CubeData table exists

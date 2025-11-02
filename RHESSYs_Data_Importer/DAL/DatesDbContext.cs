@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols;
 using RHESSYs_Data_Importer.Models;
 using System;
@@ -16,8 +16,15 @@ namespace RHESSYs_Data_Importer.DAL
     /// </summary>
     public class DatesDbContext : DbContext
     {
-        public DatesDbContext()
+        private readonly string _connectionString;
+
+        public DatesDbContext() : this(ConnectionHelper.GetConnectionString())
         {
+        }
+
+        public DatesDbContext(string connectionString)
+        {
+            _connectionString = connectionString;
         }
 
         public DatesDbContext(DbContextOptions<CubeDataDbContext> options) : base(options)
@@ -26,14 +33,11 @@ namespace RHESSYs_Data_Importer.DAL
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-#if USE_MYSQL
-            string connectionString = System.Configuration.ConfigurationManager
-                .ConnectionStrings["CubeDataContext"].ConnectionString;
-            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-#else
-            string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["CubeDataContext"].ConnectionString;
-            optionsBuilder.UseSqlServer(connectionString);
-#endif
+            if (!optionsBuilder.IsConfigured)
+            {
+                var cs = _connectionString ?? ConnectionHelper.GetConnectionString();
+                optionsBuilder.UseMySql(cs, ServerVersion.AutoDetect(cs));
+            }
         }
 
         public DbSet<Date> Dates { get; set; }

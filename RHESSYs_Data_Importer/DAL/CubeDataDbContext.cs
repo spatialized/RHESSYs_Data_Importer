@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Protocols;
 using RHESSYs_Data_Importer.Models;
 using System;
@@ -16,10 +16,16 @@ namespace RHESSYs_Data_Importer.DAL
     /// </summary>
     public class CubeDataDbContext : DbContext
     {
+        private readonly string _connectionString;
         //private const string connectionString = "Server=localhost\\SQLEXPRESS;Database=EFCore;Trusted_Connection=True;";
 
-        public CubeDataDbContext()
+        public CubeDataDbContext() : this(ConnectionHelper.GetConnectionString())
         {
+        }
+
+        public CubeDataDbContext(string connectionString)
+        {
+            _connectionString = connectionString;
         }
 
         public CubeDataDbContext(DbContextOptions<CubeDataDbContext> options) : base(options)
@@ -28,14 +34,11 @@ namespace RHESSYs_Data_Importer.DAL
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
-#if USE_MYSQL
-            string connectionString = System.Configuration.ConfigurationManager
-                .ConnectionStrings["CubeDataContext"].ConnectionString;
-            optionsBuilder.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString));
-#else
-            string connectionString = System.Configuration.ConfigurationManager.ConnectionStrings["CubeDataContext"].ConnectionString;
-            optionsBuilder.UseSqlServer(connectionString);
-#endif
+            if (!optionsBuilder.IsConfigured)
+            {
+                var cs = _connectionString ?? ConnectionHelper.GetConnectionString();
+                optionsBuilder.UseMySql(cs, ServerVersion.AutoDetect(cs));
+            }
         }
 
         public DbSet<CubeDataPoint> CubeData { get; set; }
