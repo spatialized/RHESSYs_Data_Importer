@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Security.Policy;
@@ -14,7 +14,7 @@ namespace RHESSYs_Data_Importer.DAL
     {
         private bool useMySQL = true;
 
-        const string mySqlConnectionString = "";
+        private static readonly string mySqlConnectionString = ConnectionHelper.GetConnectionString();
 
         /// <summary>
         /// Add data point to FutureMountain cubedata table
