@@ -46,7 +46,6 @@ public static class TextFileInput
                     int warmingDegrees = int.Parse(warmingStr);
                     warmingIdx = WarmingDegreesToIndex(warmingDegrees);
                 }
-
                 //Console.WriteLine("Set warmingIdx: " + warmingIdx);
 
                 List<string> lines = ReadLinesFromFile(file);
@@ -166,6 +165,180 @@ public static class TextFileInput
             }
 
             dal.AddDataPoint(data); 
+        }
+    }
+
+    public static void ReadCubeDataFiles(IEnumerable<string> files, ScenarioConfig config)
+    {
+        RHESSYsDAL dal = new RHESSYsDAL();
+        var columnMap = config.ColumnMapping != null && config.ColumnMapping.ContainsKey("cube")
+            ? config.ColumnMapping["cube"]
+            : new Dictionary<string, string>();
+
+        foreach (var file in files)
+        {
+            try
+            {
+                string fileName = Path.GetFileNameWithoutExtension(file);
+
+                int warmingIdx = -1;
+                int patchIdx = -1;
+
+                // Infer warming and patch from filename when possible
+                if (fileName.Contains("hist"))
+                {
+                    warmingIdx = 0;
+                }
+                else if (fileName.Contains("_fire"))
+                {
+                    var parts = fileName.Split('.')[0].Split("_fire");
+                    if (parts[0].Length > 0)
+                    {
+                        var last = parts[0].Last();
+                        if (char.IsDigit(last)) warmingIdx = WarmingDegreesToIndex(int.Parse(last.ToString()));
+                    }
+                }
+
+                // Patch id in names like p1234_2veg_...
+                if (fileName.StartsWith("p", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parts = fileName.Split('_');
+                    if (parts.Length > 0)
+                    {
+                        var p = parts[0];
+                        var digits = new string(p.Skip(1).TakeWhile(char.IsDigit).ToArray());
+                        if (int.TryParse(digits, out var pid)) patchIdx = pid;
+                    }
+                }
+
+                var lines = ReadLinesFromFile(file);
+                if (lines.Count == 0) continue;
+
+                var header = lines.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l)) ?? string.Empty;
+                var mapper = new ColumnMapper(header, columnMap);
+
+                if (mapper.MatchedCount == 0)
+                {
+                    Console.WriteLine($"[ERROR] No valid columns matched the mapping for file {Path.GetFileName(file)}. Falling back to legacy parsing.");
+                    int idx = 0;
+                    foreach (var line in lines)
+                    {
+                        if (idx > 0 && !string.IsNullOrWhiteSpace(line))
+                            AddDataPointLegacy(line, idx, warmingIdx, patchIdx);
+                        idx++;
+                    }
+                    continue;
+                }
+
+                // Warn for missing targets
+                if (columnMap != null && columnMap.Count > 0)
+                {
+                    var expectedTargets = new HashSet<string>(columnMap.Values, StringComparer.OrdinalIgnoreCase);
+                    var presentTargets = new HashSet<string>(mapper.MappedFields, StringComparer.OrdinalIgnoreCase);
+                    foreach (var target in expectedTargets)
+                        if (!presentTargets.Contains(target))
+                            Console.WriteLine($"[WARN] Column '{target}' not found in header for file {Path.GetFileName(file)}");
+                }
+
+                int count = 0;
+                foreach (var line in lines)
+                {
+                    if (count > 0 && !string.IsNullOrWhiteSpace(line))
+                        AddDataPointMapped(line, count, warmingIdx, patchIdx, mapper, Path.GetFileName(file));
+                    count++;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WARN] Failed to process file '{file}': {ex.Message}");
+            }
+        }
+
+        void AddDataPointLegacy(string line, int newDateIdx, int newWarmingIdx, int newPatchIdx)
+        {
+            string[] str = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            CubeDataPoint data = new CubeDataPoint();
+
+            if (newPatchIdx == -1)
+            {
+                data.dateIdx = newDateIdx;
+                data.warmingIdx = newWarmingIdx;
+                data.patchIdx = newPatchIdx;
+                data.snow = SafeFloat(str, 1);
+                data.evap = SafeFloat(str, 2);
+                data.netpsn = SafeFloat(str, 3);
+                data.depthToGW = SafeFloat(str, 4);
+                data.vegAccessWater = SafeFloat(str, 5);
+                data.Qout = SafeFloat(str, 6);
+                data.litter = SafeFloat(str, 7);
+                data.soil = SafeFloat(str, 8);
+                data.heightOver = SafeFloat(str, 9);
+                data.transOver = SafeFloat(str, 10);
+                data.heightUnder = SafeFloat(str, 11);
+                data.leafCOver = SafeFloat(str, 12);
+                data.stemCOver = SafeFloat(str, 13);
+                data.rootCOver = SafeFloat(str, 14);
+                data.leafCUnder = SafeFloat(str, 15);
+                data.stemCUnder = SafeFloat(str, 16);
+                data.rootCUnder = SafeFloat(str, 17);
+            }
+            else
+            {
+                data.dateIdx = newDateIdx;
+                data.warmingIdx = newWarmingIdx;
+                data.patchIdx = newPatchIdx;
+                data.snow = SafeFloat(str, 1);
+                data.evap = SafeFloat(str, 2);
+                data.netpsn = SafeFloat(str, 3);
+                data.depthToGW = SafeFloat(str, 4);
+                data.vegAccessWater = SafeFloat(str, 5);
+                data.Qout = SafeFloat(str, 6);
+                data.litter = SafeFloat(str, 7);
+                data.soil = SafeFloat(str, 8);
+                data.heightOver = SafeFloat(str, 9);
+                data.transOver = SafeFloat(str, 10);
+                data.heightUnder = SafeFloat(str, 11);
+                data.transUnder = SafeFloat(str, 12);
+                data.leafCOver = SafeFloat(str, 13);
+                data.stemCOver = SafeFloat(str, 14);
+                data.rootCOver = SafeFloat(str, 15);
+                data.leafCUnder = SafeFloat(str, 16);
+                data.stemCUnder = SafeFloat(str, 17);
+                data.rootCUnder = SafeFloat(str, 18);
+            }
+            dal.AddDataPoint(data);
+        }
+
+        float SafeFloat(string[] parts, int idx) => (idx >= 0 && idx < parts.Length && float.TryParse(parts[idx], out var f)) ? f : 0f;
+
+        void AddDataPointMapped(string line, int newDateIdx, int newWarmingIdx, int newPatchIdx, ColumnMapper mapper, string fileName)
+        {
+            string[] parts = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            CubeDataPoint data = new CubeDataPoint
+            {
+                dateIdx = newDateIdx,
+                warmingIdx = newWarmingIdx,
+                patchIdx = newPatchIdx,
+                snow = mapper.GetFloat(parts, "snow"),
+                evap = mapper.GetFloat(parts, "evap"),
+                netpsn = mapper.GetFloat(parts, "netpsn"),
+                depthToGW = mapper.GetFloat(parts, "depthToGW"),
+                vegAccessWater = mapper.GetFloat(parts, "vegAccessWater"),
+                Qout = mapper.GetFloat(parts, "Qout"),
+                litter = mapper.GetFloat(parts, "litter"),
+                soil = mapper.GetFloat(parts, "soil"),
+                heightOver = mapper.GetFloat(parts, "heightOver"),
+                transOver = mapper.GetFloat(parts, "transOver"),
+                heightUnder = mapper.GetFloat(parts, "heightUnder"),
+                transUnder = mapper.GetFloat(parts, "transUnder"),
+                leafCOver = mapper.GetFloat(parts, "leafCOver"),
+                stemCOver = mapper.GetFloat(parts, "stemCOver"),
+                rootCOver = mapper.GetFloat(parts, "rootCOver"),
+                leafCUnder = mapper.GetFloat(parts, "leafCUnder"),
+                stemCUnder = mapper.GetFloat(parts, "stemCUnder"),
+                rootCUnder = mapper.GetFloat(parts, "rootCUnder")
+            };
+            dal.AddDataPoint(data);
         }
     }
 

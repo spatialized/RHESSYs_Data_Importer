@@ -3,6 +3,7 @@
 
 using RHESSYs_Data_Importer.Configuration;
 using RHESSYs_Data_Importer.DAL;
+using RHESSYs_Data_Importer.IO;
 
 bool importAll = false;
 bool importDates = importAll;
@@ -10,7 +11,7 @@ bool importCubeData = importAll;
 bool importWaterData = importAll;
 bool importFireData = importAll;
 bool importPatchData = importAll;
-bool importTerrainData = true;
+bool importTerrainData = importAll;
 
 // Data Folders
 string folderAggregate = "C:\\Users\\Redux\\Documents\\FutureMountain\\aggregate";      
@@ -21,8 +22,9 @@ string folderPatchData = "C:\\Users\\Redux\\Documents\\FutureMountain\\patch_dat
 string folderTerrainData = "C:\\Users\\Redux\\Documents\\FutureMountain\\terrain_data";
 
 ScenarioConfig? activeConfig = null;
+FileDiscoveryResult? discovered = null;
 
-Console.WriteLine("-- RHESSYS Data Importer v1.1 --");
+Console.WriteLine("-- RHESSYS Data Importer v2.0 --");
 Console.WriteLine("-- by David Gordon --");
 Console.WriteLine("");
 Console.WriteLine("Running...");
@@ -38,6 +40,18 @@ Console.WriteLine("Running...");
         // Make connection string available to all DbContexts
         ConnectionHelper.SetOverride(config.Database.GetConnectionString());
         activeConfig = config;
+
+        // Dynamic file discovery
+        discovered = FileDiscovery.FindFiles(config);
+        foreach (var warn in discovered.Warnings)
+            Console.WriteLine(warn);
+
+        Console.WriteLine("-- File Discovery Summary --");
+        foreach (var cat in new[] { "cube", "patch", "terrain", "fire", "water", "climate" })
+        {
+            var count = discovered.Count(cat);
+            Console.WriteLine($"{cat}: {count} files");
+        }
     }
     else
     {
@@ -52,10 +66,19 @@ if(importDates)
     TextFileInput.ReadDates(folderAggregate);
 if(importCubeData)
 {
-    if (activeConfig != null)
-        TextFileInput.ReadCubeData(folderAggregate, folderCubes, activeConfig);
-    else
+    if (activeConfig != null && discovered != null && discovered.Count("cube") > 0)
+    {
+        TextFileInput.ReadCubeDataFiles(discovered.FilesByCategory["cube"], activeConfig);
+    }
+    else if (activeConfig != null && discovered != null && discovered.Count("cube") == 0)
+    {
+        Console.WriteLine("[WARN] No cube files discovered via config. Falling back to legacy cube importer.");
         TextFileInput.ReadCubeData(folderAggregate, folderCubes);
+    }
+    else
+    {
+        TextFileInput.ReadCubeData(folderAggregate, folderCubes);
+    }
 }
 if (importWaterData)
     TextFileInput.ReadWaterData(folderWater);
