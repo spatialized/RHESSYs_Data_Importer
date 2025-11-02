@@ -32,21 +32,19 @@ namespace RHESSYs_Data_Importer.Models
 
             public int year { get; set; }
             public int month { get; set; }
-            public int gridHeight { get; set; }
-            public int gridWidth { get; set; }
+            public int gridSize { get; set; }
             public int pixelGrainSize { get; set; }
             public int decimalPrecision { get; set; }
             public int[] dataList { get; set; }
 
-            public TerrainData(int newMonth, int newYear, int newGridHeight, int newGridWidth,
+            public TerrainData(int newMonth, int newYear, int newGridSize, 
                 int newPixelGrainSize, int newDecimalPrecision,
                 int[] newDataList) //, FireDataPointCollection[,] newDataGrid)
             {
                 year = newYear;
                 month = newMonth;
                 dataList = newDataList;
-                gridHeight = newGridHeight;
-                gridWidth = newGridWidth;
+                gridSize = newGridSize;
                 pixelGrainSize = newPixelGrainSize;
                 decimalPrecision = newDecimalPrecision;
                 dataList = newDataList;
@@ -74,12 +72,12 @@ namespace RHESSYs_Data_Importer.Models
 
             public int GetGridHeight()
             {
-                return gridHeight;
+                return gridSize;
             }
 
             public int GetGridWidth()
             {
-                return gridWidth;
+                return gridSize;
             }
 
             public int[] GetDataList()
@@ -93,8 +91,7 @@ namespace RHESSYs_Data_Importer.Models
                 //jsonRecord.id = id;
                 jsonRecord.year = year;
                 jsonRecord.month = month;
-                jsonRecord.gridHeight = gridHeight;
-                jsonRecord.gridWidth = gridWidth;
+                jsonRecord.gridSize = gridSize;
                 jsonRecord.pixelGrainSize = pixelGrainSize;
                 jsonRecord.decimalPrecision = decimalPrecision;
 
@@ -115,8 +112,7 @@ namespace RHESSYs_Data_Importer.Models
             public int warmingIdx { get; set; }
             public int year { get; set; }
             public int month { get; set; }
-            public int gridHeight { get; set; }
-            public int gridWidth { get; set; }
+            public int gridSize { get; set; }
             public int pixelGrainSize { get; set; }
             public int decimalPrecision { get; set; }
 

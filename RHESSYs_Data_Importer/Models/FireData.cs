@@ -36,7 +36,7 @@ namespace RHESSYs_Data_Importer.Models
         //    month = newMonth;
         //    day = newDay;
         //    dataList = newDataList;
-        //    gridHeight = newGridHeight;
+        //    gridSize = newGridHeight;
         //    gridWidth = newGridWidth;
         //}
 

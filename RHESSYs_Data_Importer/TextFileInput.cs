@@ -311,9 +311,8 @@ public static class TextFileInput
                 //int[,,] unflattened = Unflatten1DIntArrayTo3D(flatArray, inputWidth, 4);
 
                 int gridHeight = 512 / grainSize;
-                int gridWidth = 512 / grainSize;
 
-                TerrainData terrainData = new TerrainData(month, year, gridHeight, gridWidth,
+                TerrainData terrainData = new TerrainData(month, year, gridHeight, 
                     grainSize, decPrec, flatArray);
 
                 TerrainDataFrameJSONRecord jsonRecord = ConvertTerrainDataFrameRecordToJSONRecord(terrainData, 
@@ -360,8 +359,7 @@ public static class TextFileInput
         jsonRecord.warmingIdx = warmingIdx;
         jsonRecord.year = year;
         jsonRecord.month = month;
-        jsonRecord.gridHeight = frame.gridHeight;
-        jsonRecord.gridWidth = frame.gridWidth;
+        jsonRecord.gridSize = frame.gridSize;
         jsonRecord.pixelGrainSize = grainSize;
         jsonRecord.decimalPrecision = decimalPrecision;
 
