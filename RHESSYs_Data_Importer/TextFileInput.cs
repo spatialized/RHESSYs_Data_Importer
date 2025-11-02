@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.IO;
 using RHESSYs_Data_Importer.Models;
 using RHESSYs_Data_Importer.DAL;
@@ -9,6 +9,9 @@ using Newtonsoft.Json.Linq;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 using RHESSYs_Data_Importer.Models.RHESSYs_Data_Importer.Models;
+using System.Linq;
+using RHESSYs_Data_Importer.Configuration;
+using RHESSYs_Data_Importer.Parsing;
 
 public static class TextFileInput
 {
@@ -163,6 +166,244 @@ public static class TextFileInput
             }
 
             dal.AddDataPoint(data); 
+        }
+    }
+
+    public static void ReadCubeData(string folderAggregate, string folderCubes, ScenarioConfig config)
+    {
+        RHESSYsDAL dal = new RHESSYsDAL();
+
+        try
+        {
+            Console.WriteLine("Importing files from folder: " + folderAggregate);
+
+            foreach (string file in Directory.EnumerateFiles(folderAggregate))
+            {
+                int patchIdx = -1;
+                int warmingIdx = -1;
+
+                string fileName = Path.GetFileNameWithoutExtension(file);
+
+                if (fileName.Contains("hist"))
+                {
+                    warmingIdx = 0;
+                }
+                else
+                {
+                    string[] partsName = file.Split('.')[0].Split("_fire");
+                    string warmingStr = partsName[0].Substring(partsName[0].Length - 1);
+                    int warmingDegrees = int.Parse(warmingStr);
+                    warmingIdx = WarmingDegreesToIndex(warmingDegrees);
+                }
+
+                List<string> lines = ReadLinesFromFile(file);
+                var header = lines.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l)) ?? string.Empty;
+                var columnMap = config.ColumnMapping != null && config.ColumnMapping.ContainsKey("cube")
+                    ? config.ColumnMapping["cube"]
+                    : new Dictionary<string, string>();
+                var mapper = new ColumnMapper(header, columnMap);
+
+                if (mapper.MatchedCount == 0)
+                {
+                    Console.WriteLine($"[ERROR] No valid columns matched the mapping for file {Path.GetFileName(file)}. Falling back to legacy parsing.");
+                    // Fallback to legacy parsing
+                    int countLegacy = 0;
+                    foreach (var line in lines)
+                    {
+                        if (countLegacy > 0)
+                            AddDataPointLegacy(line, countLegacy, warmingIdx, patchIdx);
+                        countLegacy++;
+                    }
+                    continue;
+                }
+
+                // Warn for missing mapped fields
+                if (columnMap != null && columnMap.Count > 0)
+                {
+                    var expectedTargets = new HashSet<string>(columnMap.Values, StringComparer.OrdinalIgnoreCase);
+                    var presentTargets = new HashSet<string>(mapper.MappedFields, StringComparer.OrdinalIgnoreCase);
+                    foreach (var target in expectedTargets)
+                    {
+                        if (!presentTargets.Contains(target))
+                        {
+                            Console.WriteLine($"[WARN] Column '{target}' not found in header for file {Path.GetFileName(file)}");
+                        }
+                    }
+                }
+
+                int count = 0;
+                foreach (string line in lines)
+                {
+                    if (count > 0 && !string.IsNullOrWhiteSpace(line))
+                        AddDataPointMapped(line, count, warmingIdx, patchIdx, mapper, Path.GetFileName(file));
+
+                    count++;
+                }
+            }
+
+            Console.WriteLine("Importing files from folder: " + folderCubes);
+
+            foreach (string file in Directory.EnumerateFiles(folderCubes))
+            {
+                int warmingIdx = -1;
+
+                string fileName = Path.GetFileNameWithoutExtension(file);
+
+                string[] parts = fileName.Split('_');
+                string patchIdxStr = parts[0].Split('p')[1];
+                int patchIdx = int.Parse(patchIdxStr);
+
+                if (fileName.Contains("hist"))
+                {
+                    warmingIdx = 0;
+                }
+                else
+                {
+                    parts = file.Split('.')[0].Split("_fire");
+                    string warmingStr = parts[0].Substring(parts[0].Length - 1);
+                    int warmingDegrees = int.Parse(warmingStr);
+
+                    Console.WriteLine("Set patchIdx: " + patchIdx);
+                    warmingIdx = WarmingDegreesToIndex(warmingDegrees);
+                }
+
+                List<string> lines = ReadLinesFromFile(file);
+                var header = lines.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l)) ?? string.Empty;
+                var columnMap = config.ColumnMapping != null && config.ColumnMapping.ContainsKey("cube")
+                    ? config.ColumnMapping["cube"]
+                    : new Dictionary<string, string>();
+                var mapper = new ColumnMapper(header, columnMap);
+
+                if (mapper.MatchedCount == 0)
+                {
+                    Console.WriteLine($"[ERROR] No valid columns matched the mapping for file {Path.GetFileName(file)}. Falling back to legacy parsing.");
+                    // Fallback to legacy parsing
+                    int countLegacy = 0;
+                    foreach (var line in lines)
+                    {
+                        if (countLegacy > 0)
+                            AddDataPointLegacy(line, countLegacy, warmingIdx, patchIdx);
+                        countLegacy++;
+                    }
+                    continue;
+                }
+
+                // Warn for missing mapped fields
+                if (columnMap != null && columnMap.Count > 0)
+                {
+                    var expectedTargets = new HashSet<string>(columnMap.Values, StringComparer.OrdinalIgnoreCase);
+                    var presentTargets = new HashSet<string>(mapper.MappedFields, StringComparer.OrdinalIgnoreCase);
+                    foreach (var target in expectedTargets)
+                    {
+                        if (!presentTargets.Contains(target))
+                        {
+                            Console.WriteLine($"[WARN] Column '{target}' not found in header for file {Path.GetFileName(file)}");
+                        }
+                    }
+                }
+
+                int count2 = 0;
+                foreach (string line in lines)
+                {
+                    if (count2 > 0 && !string.IsNullOrWhiteSpace(line))
+                        AddDataPointMapped(line, count2, warmingIdx, patchIdx, mapper, Path.GetFileName(file));
+
+                    count2++;
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine("Exception: " + e.Message);
+        }
+        finally
+        {
+            Console.WriteLine("Executing finally block.");
+        }
+
+        void AddDataPointLegacy(string line, int newDateIdx, int newWarmingIdx, int newPatchIdx)
+        {
+            string[] str = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            CubeDataPoint data = new CubeDataPoint();
+
+            if (newPatchIdx == -1)
+            {
+                data.dateIdx = newDateIdx;
+                data.warmingIdx = newWarmingIdx;
+                data.patchIdx = newPatchIdx;
+                data.snow = float.Parse(str[1]);
+                data.evap = float.Parse(str[2]);
+                data.netpsn = float.Parse(str[3]);
+                data.depthToGW = float.Parse(str[4]);
+                data.vegAccessWater = float.Parse(str[5]);
+                data.Qout = float.Parse(str[6]);
+                data.litter = float.Parse(str[7]);
+                data.soil = float.Parse(str[8]);
+                data.heightOver = float.Parse(str[9]);
+                data.transOver = float.Parse(str[10]);
+                data.heightUnder = float.Parse(str[11]);
+                data.leafCOver = float.Parse(str[12]);
+                data.stemCOver = float.Parse(str[13]);
+                data.rootCOver = float.Parse(str[14]);
+                data.leafCUnder = float.Parse(str[15]);
+                data.stemCUnder = float.Parse(str[16]);
+                data.rootCUnder = float.Parse(str[17]);
+            }
+            else
+            {
+                data.dateIdx = newDateIdx;
+                data.warmingIdx = newWarmingIdx;
+                data.patchIdx = newPatchIdx;
+                data.snow = float.Parse(str[1]);
+                data.evap = float.Parse(str[2]);
+                data.netpsn = float.Parse(str[3]);
+                data.depthToGW = float.Parse(str[4]);
+                data.vegAccessWater = float.Parse(str[5]);
+                data.Qout = float.Parse(str[6]);
+                data.litter = float.Parse(str[7]);
+                data.soil = float.Parse(str[8]);
+                data.heightOver = float.Parse(str[9]);
+                data.transOver = float.Parse(str[10]);
+                data.heightUnder = float.Parse(str[11]);
+                data.transUnder = float.Parse(str[12]);
+                data.leafCOver = float.Parse(str[13]);
+                data.stemCOver = float.Parse(str[14]);
+                data.rootCOver = float.Parse(str[15]);
+                data.leafCUnder = float.Parse(str[16]);
+                data.stemCUnder = float.Parse(str[17]);
+                data.rootCUnder = float.Parse(str[18]);
+            }
+            dal.AddDataPoint(data);
+        }
+
+        void AddDataPointMapped(string line, int newDateIdx, int newWarmingIdx, int newPatchIdx, ColumnMapper mapper, string fileName)
+        {
+            string[] parts = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
+            CubeDataPoint data = new CubeDataPoint
+            {
+                dateIdx = newDateIdx,
+                warmingIdx = newWarmingIdx,
+                patchIdx = newPatchIdx,
+                snow = mapper.GetFloat(parts, "snow"),
+                evap = mapper.GetFloat(parts, "evap"),
+                netpsn = mapper.GetFloat(parts, "netpsn"),
+                depthToGW = mapper.GetFloat(parts, "depthToGW"),
+                vegAccessWater = mapper.GetFloat(parts, "vegAccessWater"),
+                Qout = mapper.GetFloat(parts, "Qout"),
+                litter = mapper.GetFloat(parts, "litter"),
+                soil = mapper.GetFloat(parts, "soil"),
+                heightOver = mapper.GetFloat(parts, "heightOver"),
+                transOver = mapper.GetFloat(parts, "transOver"),
+                heightUnder = mapper.GetFloat(parts, "heightUnder"),
+                transUnder = mapper.GetFloat(parts, "transUnder"),
+                leafCOver = mapper.GetFloat(parts, "leafCOver"),
+                stemCOver = mapper.GetFloat(parts, "stemCOver"),
+                rootCOver = mapper.GetFloat(parts, "rootCOver"),
+                leafCUnder = mapper.GetFloat(parts, "leafCUnder"),
+                stemCUnder = mapper.GetFloat(parts, "stemCUnder"),
+                rootCUnder = mapper.GetFloat(parts, "rootCUnder")
+            };
+            dal.AddDataPoint(data);
         }
     }
 

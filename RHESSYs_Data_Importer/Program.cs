@@ -20,6 +20,8 @@ string folderFire = "C:\\Users\\Redux\\Documents\\FutureMountain\\fire";
 string folderPatchData = "C:\\Users\\Redux\\Documents\\FutureMountain\\patch_data";
 string folderTerrainData = "C:\\Users\\Redux\\Documents\\FutureMountain\\terrain_data";
 
+ScenarioConfig? activeConfig = null;
+
 Console.WriteLine("-- RHESSYS Data Importer v1.1 --");
 Console.WriteLine("-- by David Gordon --");
 Console.WriteLine("");
@@ -35,6 +37,7 @@ Console.WriteLine("Running...");
         Console.WriteLine($"Database: {config.Database.Name} @ {config.Database.Host}:{config.Database.Port}");
         // Make connection string available to all DbContexts
         ConnectionHelper.SetOverride(config.Database.GetConnectionString());
+        activeConfig = config;
     }
     else
     {
@@ -48,7 +51,12 @@ Console.WriteLine("Running...");
 if(importDates)
     TextFileInput.ReadDates(folderAggregate);
 if(importCubeData)
-    TextFileInput.ReadCubeData(folderAggregate, folderCubes);
+{
+    if (activeConfig != null)
+        TextFileInput.ReadCubeData(folderAggregate, folderCubes, activeConfig);
+    else
+        TextFileInput.ReadCubeData(folderAggregate, folderCubes);
+}
 if (importWaterData)
     TextFileInput.ReadWaterData(folderWater);
 if (importFireData)
